@@ -1,76 +1,321 @@
 #!/usr/bin/env python3
 
-##### python
+import copy
+import json
 import logging
-import sys
-import subprocess
 import os
-import tempfile
+import subprocess
+import sys
 from pathlib import Path
+logging.basicConfig(
+    level=logging.DEBUG,
+    handlers=[logging.StreamHandler(sys.stderr)]
+)
 
-##### personalization
+import argparse
+parser = argparse.ArgumentParser()
+
+parser.add_argument("command", help="docker-caroll wrapper command. default: bash", default="bash", nargs='?')
+parser.add_argument("--tasklist", help="list of tasks for psake to run")
+parser.add_argument("--properties", help="psake properties to set. example: ''", dest='properties')
+try:
+  args = parser.parse_intermixed_args().__dict__
+except:
+  args = {
+    'command' : sys.argv[1],
+    'params' : sys.argv[2:]
+  }
+
+if args.get('tasklist'):
+  logging.debug('parsing tasklist')
+  args['tasklist'] = [t.strip() for t in args['tasklist'].split(',')]
+
+if args.get('properties'):
+  logging.debug('parsing properties')
+  temp = [p.strip() for p in args['properties'].split(',')]
+  temp2 = {}
+  for t in temp:
+    temp2[t.split('=')[0]] = t.split('=')[1]
+  args['properties'] = temp2
+  del(temp2)
+  del(temp)
+
+get_env = os.environ.get
+
+
+# personalization
 IMAGE_NAME = "docker-caroll"
 HOSTNAME = "docker-caroll"
 
+# environment variables to pass to docker environment and sensible defaults
+pd_env_vars = {
+  # ryan / perfect-dark
+  'PIRACYCHECKS': get_env('PIRACYCHECKS', '1'),
+  'ROMID': get_env('ROMID', 'ntsc-final'),
+
+  # catherine / MouseInjector
+  'MINGWDIR' : get_env('MINGWDIR', '/usr/bin'),
+  'CC' : get_env('CC', '/usr/bin/i686-w64-mingw32-gcc-win32'),
+  'WINDRES': get_env('WINDRES', "/usr/bin/i686-w64-mingw32-windres"),
+
+   # where to copy pd / mouseinjector when done
+   # falsey / no-op if not set
+  'HOST1964' : get_env('HOST1964', ''),
+  'PDDEST': get_env('PDDEST', ''),
+  'MOUSEINJECTORDEST': get_env('MOUSEINJECTORDEST', '')
+}
+
+# mounts defined in environment variables
+pd_env_paths = {
+  # Used by Ryan's pdtools. I'm using it to pick up the mount dir
+  # for perfect-dark builds
+  'PD' : get_env('PD', f'{os.environ["HOME"]}/src/perfect-dark'),
+
+  # Mouse Injector dir
+  "MOUSEINJECTOR" : get_env('MOUSEINJECTOR', f'{os.environ["HOME"]}/src/MouseInjectorPlugin'),
+  'PDPSAKE': get_env('PDPSAKE', f"{Path(__file__ ).parents[0].resolve()}/scripts/psake"),
+
+  # ssh
+  'SSH_AUTH_SOCK' : get_env('SSH_AUTH_SOCK')
+
+}
+
+
+# NOTE: assumes that paths have been 'resolved' by this point
+
+pd_mounts = {
+  pd_env_paths['PD'] : '/app/perfect-dark',
+  pd_env_paths['MOUSEINJECTOR']: '/app/MouseInjector',
+  pd_env_paths['PDPSAKE']: "/app/psake",
+  pd_env_paths['SSH_AUTH_SOCK']: "/ssh-agent"
+}
+
+logging.debug(pd_env_vars)
+logging.debug(pd_env_paths)
+logging.debug(pd_mounts)
+
+def get_docker_caroll_root():
+    return Path(__file__).parents[0]
+
+
 def get_pdroot(path: Path = os.getcwd()) -> Path:
-  """
-  Given a detected os.getcwd(), go updir until the 'root' of the pd project is found
-  """
-  path=Path(path).expanduser().resolve()
-  def is_pdroot(path: Path) -> bool:
     """
-    Pretty sure that Makefile is forever in this project
+    Given a detected os.getcwd(),
+    go updir until the 'root' of the pd project is found
+
     """
-    return Path(path / "Makefile").exists()
+    path = Path(path).expanduser().resolve()
 
-  if f'{path}' == "/": raise Exception("Not in a pd project!")
-  if is_pdroot(path): return path
-  return get_pdroot(path / "..")
+    def is_pdroot(path: Path) -> bool:
+        """
+        Pretty sure that Makefile is forever in this project
+
+        this is a shameful, but good-enough check
+        to get reasonable confidence that we're in a perfect-dark project
+        """
+
+        return Path("makefile") or Path(path / "Makefile").exists() and\
+            Path(path / "stagetable.txt").exists() and\
+            Path(path / "checksums.ntsc-beta.md5")
+    my_ex = Exception("Not in a pd project!")
+    if f'{path}' == "/":
+        raise my_ex
+    if is_pdroot(path):
+        return path
+    return get_pdroot(path / "..")
 
 
-def run_pd(image_name = IMAGE_NAME,
-           hostname = HOSTNAME,
-           command = "bash"
-           ):
-    '''
-    Runs a shell command in the pd-rind image
+if __name__ == "__main__":
+    try:
+        command = " ".join(list(sys.argv[1:]))
+    except Exception as ex:
+        command = "bash"
 
-    Uses subprocess.call(docker_command, shell=True)
-    '''
-    def bind_mount(source, dest):
+
+    # ==== Commands ====
+    # creates container
+    def create_docker_caroll(**kwargs):
+      if not kwargs: kwargs = {}
+      kwargs['command'] = ''
+      kwargs['docker_options'] = '-d'
+      kwargs['runner'] = subprocess.check_output
+      kwargs['current_user'] = False
+      container_id = docker_cmd(**kwargs).decode('utf-8').strip()
+      logging.debug(f'container_id: {container_id}')
+      return container_id
+
+    def docker_exec(**kwargs):
+      if not kwargs: kwargs = {}
+      kwargs['docker_cmd'] = 'exec'
+      kwargs['docker_resource'] = kwargs['container_id']
+      docker_cmd(**kwargs)
+
+    def psake(**kwargs):
+      # run our bootstrap psake script
+      # and pass whatever parameters
+      # are provided on cli
+      logging.debug('psake: begin')
+      # TODO: add tasklist and property params
+      # pass them to psake
+      # run-psake will parse it out from the json we send it
+      params = kwargs.get('params', {})
+      import base64
+      base_psake_command = f"run-psake " +\
+        base64.b64encode( f"{json.dumps(dict(params))}".encode("utf8") ).decode("utf8")
+      command = base_psake_command
+      kwargs['command'] = base_psake_command
+      # need to run docker_caroll w/ mounts
+      # mount our psake scripts
+      docker_exec(**kwargs)
+
+
+    # all the other dockery things will eventually run this
+    def docker_cmd(image_name = IMAGE_NAME,
+        hostname = HOSTNAME,
+        command = "",
+        docker_options = "-it",
+        docker_cmd = 'run',
+        current_user = True,
+        params=None,
+        mounts=None,
+        # image or container ID
+        docker_resource = IMAGE_NAME,
+        runner = subprocess.check_call,
+        **kwargs):
+        if not params: params = {}
+        params_tail = params.get('params', [])
+        logging.debug(f'docker_cmd: {locals()}')
+        if not mounts: mounts = {}
+        def working_directory(command):
+          # default: /app
+          workdir = "/app"
+          # if command startswith make and get_pdroot passes, use pdroot
+          pd_root = None
+          r = None
+          try: pd_root = get_pdroot(os.getcwd())
+          except: pass
+
+          def _root_to_mount(w):
+            try:
+              return pd_mounts[str(w)]
+            except:
+              logging.debug(KeyError(f"map current project directory to container directory for workdir: {w}. Please make check these envrionment variables: {pd_env_paths}"))
+              return "/app/perfect-dark"
+
+
+          if "run-psake" in command:
+            r = "/app/psake"
+
+          if not r and pd_root:
+            r = _root_to_mount(pd_root)
+
+          r = f"-w {r}"
+          return r
+        def environment_variable(k, v):
+          return f"--env {k}={v}"
+        def bind_mount(source, dest):
+            '''
+            parameter source: path-ish on host system. Converted to pathlib and resolve is used.
+            parameter destination: path-ish on docker image. Converted to string and used as-is.
+            rvalue: --mount parameter for `docker run`
+            '''
+            return "--mount type=bind,source=" + str(Path(source).resolve()) + ",target=" + str( dest )
+
+        # legacy mode: mount project dir in to /pd and just run it
+        # this is what happens when running make inside a perfect-dark / MouseInjector project
+        #
+        # ensamble mode: mount directories per config and load command
+        # everything else. Useful for running psake cycles.
+        #
+
+
+        rmstr = '--rm'
+        userstr = "--user " +  str(os.getuid()) + ":" + str(os.getgid())
+        homestr = f"-v {get_env('HOME')}:/home/u1"
+        hosttr = f'-h={hostname}'
+        if docker_cmd != 'run':
+          rmstr = ''
+          hosttr = ''
+          homestr = ''
+        if not current_user:
+          userstr = ''
+
+        docker_command = " ".join([
+          f"docker {docker_cmd}",
+          # pretty hostname for terminal
+          hosttr,
+          *[
+            # the build tools need these env vars to corespond to mount dirs
+            environment_variable("PD", "/app/perfect-dark"),
+            environment_variable("MOUSEINJECTOR", "/app/MouseInjector"),
+            environment_variable("SSH_AUTH_SOCK", '/ssh-agent'),
+
+            # everything else can be passed as-is
+            *[environment_variable(k,v) for k,v in pd_env_vars.items()]
+          ],
+          # # sensible permissions for generated artifacts
+          userstr,
+          *[bind_mount(k, v) for k,v in pd_mounts.items() if docker_cmd == 'run'],
+          homestr,
+          working_directory(command),
+          # interactive terminal
+          docker_options,
+          # clean up after ourselves
+          rmstr,
+          # image name
+          docker_resource,
+          # command to run. usually bash or some invocation of make
+          command,
+          *[p for p in params_tail]
+        ])
+        logging.info(docker_command)
+        return runner(docker_command, shell=True)
+
+    def run_pd(
+            image_name=IMAGE_NAME,
+            hostname=HOSTNAME,
+            command="bash",
+            params=None,
+            **kwargs):
         '''
-        parameter source: path-ish on host system. Converted to pathlib and resolve is used.
-        parameter destination: path-ish on docker image. Converted to string and used as-is.
-        rvalue: --mount parameter for `docker run`
+        cli dispatcher
         '''
-        return "--mount type=bind,source=" + str(Path(source).resolve()) + ",target=" + str( dest )
+        # start container
+        container_id = create_docker_caroll(**params)
 
-    docker_command = " ".join([
-      "docker run",
-      # pretty hostname for terminal
-      "-h=" + hostname,
-      # pretty user for terminal
-      "--user " +  str(os.getuid()) + ":" + str(os.getgid()),
-      bind_mount(get_pdroot(os.getcwd()), "/pd"),
-      # interactive terminal
-      "-it",
-      # clean up after ourselves
-      "--rm",
-      # image name
-      IMAGE_NAME,
-      # command to run. usually bash or some invocation of make
-      command
-    ])
-    print(docker_command)
-    subprocess.call(docker_command , shell=True)
+        cmds = {
+          'psake' : psake,
+          'container': create_docker_caroll
+        }
+        # slurp up all locals into params dictionary for later use
+        params = copy.deepcopy(locals())
+        # retval of docker command, if any
+        r = None
+        # exceptions during docker command
+        cmd_e = None
+        try:
+          def add_current_user(**kwargs):
+            if not kwargs: kwargs = {}
+            # runtime user creation sh snippet
+            # pasted and modified from https://unix.stackexchange.com/questions/524268/running-git-or-ssh-client-in-docker-as-user-no-user-exists-for-uid
+            kwargs['command'] = "sh -c " + '"' + "[ -x /usr/sbin/useradd ] && useradd -m -u $(id -u) u1 -s /bin/sh || adduser -D -u $(id -u) u1 -s /bin/bash;" + '"'
+            kwargs['current_user'] = False
+            docker_exec(**kwargs)
+          add_current_user(**params)
+          try:
+            if command not in cmds:
+              return docker_exec(**params)
+            # TODO: exec 'invoke-command-as-user' script
+            r = cmds[command](**params)
+          except Exception as ex:
+            cmd_e = ex
+            logging.error(ex)
+        except:
+          pass
+        finally:
+          logging.info("cleaning up container...")
+          subprocess.check_output(f'docker container stop {container_id}', shell=True)
+          return r
 
+    run_pd(command=args['command'], params=args)
 
-###############
-#    Main     #
-###############
-try:
-    command = " ".join(list(sys.argv[1:]))
-except Exception as ex:
-    command = "bash"
-
-run_pd(command=command)

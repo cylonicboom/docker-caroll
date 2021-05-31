@@ -9,6 +9,8 @@ Tested on MacOS, Ubuntu, and WSL+Docker hosts.
 
 ``` bash
 git clone git@gitlab.com:NeonNyan/docker-caroll.git ~/src/docker-caroll #or wherever
+cd ~/src/docker-caroll
+make # build the docker image
 echo 'export PATH="$HOME/src/docker-caroll:$PATH"' >> ~/.profile # or whatever shell you use
 
 ```

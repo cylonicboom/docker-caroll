@@ -1,6 +1,6 @@
 .PHONY: build
 build:
-	DATE=$(shell date -u +'%m-%d-%y.%H-%M-%S'); docker build . -t docker-caroll:latest -t docker-caroll:$$DATE --platform amd64
+	DATE=$(shell date -u +'%m-%d-%y.%H-%M-%S'); docker build ./docker/perfect-dark -t docker-caroll:latest -t docker-caroll:$$DATE --platform amd64
 
 .PHONY: clean
 clean:

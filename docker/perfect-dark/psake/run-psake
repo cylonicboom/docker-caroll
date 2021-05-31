@@ -1,0 +1,20 @@
+#!/usr/bin/env pwsh
+
+param(
+    [String]
+    $ParamString=""
+)
+
+$InformationPreference = "Continue"
+import-module /opt/psake/src/psake.psm1
+
+Write-Information "paramstring: $paramstring"
+
+$paramTable = [Text.Encoding]::Utf8.GetString([Convert]::FromBase64String($ParamString)) | ConvertFrom-Json -AsHashTable
+
+
+
+# scrubbing commands
+$paramTable | Format-Table
+$paramTable.remove('command')
+invoke-psake @paramTable
