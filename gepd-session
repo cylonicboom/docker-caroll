@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+IFS=$'\n\t'
+
+start(){
+
+  (exec steam steam://rungameid/9663529678475886592) 2>&1 > /dev/null
+  # TODO: start obs to start recording gepd
+  # obs uses '.' as your savedir
+
+  (pushd $PD
+   exec obs \
+    --startrecording\
+    # --minimize-to-tray\
+    --profile "gdpd"\
+    --scene
+   popd) 2>&1 > /dev/null
+}
+
+stop() {
+  (
+    # TODO: document setup in obs
+    # make sure to record w/ matroska!
+    (exec killall obs) 2>&1 > /dev/null
+    (exec killall gepd.exe) 2>&1 > /dev/null
+
+    # TODO: capture observations (written notes)
+   ) 2>&1 > /dev/null
+}
+
+
+"$@"
