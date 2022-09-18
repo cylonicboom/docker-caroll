@@ -3,11 +3,11 @@
 #
 
 
-
 properties {
     $HOST1964 = $env:HOST1964
     $PDDEST = $env:PDDEST
     $MOUSEINJECTORDEST = $env:MOUSEINJECTORDEST
+    $ED64HOST = $env:ED64HOST
 }
 
 task default -depends root
@@ -28,6 +28,9 @@ task root {
     # path: copy of rom file w/ branch and timestamp in filename
     $script:PDARCHIVE=$null
     Write-Information "My target hostname is $script:HOST1964"
+    $script:ED64HOST = $ED64HOST
+
+    $script:pd_make_success = $false
 }
 
 task clean-perfectdark -depends "root" -action {
@@ -43,23 +46,27 @@ task make-perfectdark -depends "root" -preAction {
     popd
 } -action {
   pushd $env:PD
-    make -j
+    # rebuild mkrom every time
+    pushd tools/mkrom
+      make clean
+      make
+    popd
+
+    # make perfect-dark and set success
+    make -j && Set-Variable -scope script -name pd_make_success -value $true
   popd
-  # TODO: make
 } -postAction {
   # copy
   pushd $env:PD
     # TODO: take checksum of perfect-dark after build
     $script:PDPostCheckSum = Get-FileHash "${script:OUT_ROM}.z64" -Erroraction Stop
-    Write-Information "Would copy perfect dark to archive location now..."
+    $script:PDImageChanged = "$($script:PDPostCheckSum.hash)".Trim() -ne "$($script:PDPreCheckSum.hash)".Trim()
     Write-Information "PDPostCheckSum: $($script:PDPostCheckSum.hash)"
     Write-Information "PDPreCheckSum: $($script:PDPreCheckSum.hash)"
-
-
-    if ( ( test-path "${script:OUT_ROM}.z64" )  -and ( $PDPostCheckSum.Hash -ne $PDPreCheckSum.Hash) ) {
+    write-host "pd image changed: $PDImageChanged"
+    if (-not $PDPreCheckSum.hash -or ( $pd_make_success -and $PDImageChanged )) {
         cp -v "${OUT_ROM}.z64" $script:PDARCHIVE
     }
-
   popd
 }
 
@@ -82,34 +89,3 @@ task clean-mouseinjector -action {
 task clean -depends "clean-mouseinjector", "clean-perfectdark"
 task build -depends "make-perfectdark", "make-mouseinjector"
 
-
-task check-sendvars -action {
-    assert ( $script:HOST1964 -ne $null ) "HOST1964 is required"
-    assert ( $script:PDDEST -ne $null ) "PDDEST is required"
-    assert ( $script:MOUSEINJECTORDEST -ne $null ) "MOUSEINJECTORDEST is required"
-}
-task send-perfectdarkto1964 -preaction {
-} -action {
-    pushd $env:PD
-      if ((test-path $script:PDARCHIVE)){
-          Write-Information "sending to $script:HOST1964"
-          scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $script:PDARCHIVE "${script:HOST1964}:${script:PDDEST}\\$(basename $script:PDARCHIVE)"
-      }
-    popd
-
-} -postaction {
-
-} -depends "make-perfectdark", "root", "check-sendvars"
-
-task send-mouseinjectorto1964 -preaction {
-    Write-Information "sending to $script:HOST1964"
-
-} -action {
-    pushd $env:MOUSEINJECTOR
-      scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no Mouse_Injector.dll "${script:HOST1964}:${script:MOUSEINJECTORDEST}"
-    popd
-} -postaction {
-
-} -depends "make-perfectdark", "root", "check-sendvars"
-
-task 1964 -depends "send-perfectdarkto1964", "send-mouseinjectorto1964"
