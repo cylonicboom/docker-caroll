@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+import copy
+import json
+import logging
+import os
+import subprocess
+import sys
+from pathlib import Path
+logging.basicConfig(
+    level=logging.DEBUG,
+    handlers=[logging.StreamHandler(sys.stderr)]
+)
+
+GEPD_ARCHIVE = os.getenv("GEPD_ARCHIVE")
+assert GEPD_ARCHIVE, "unset GEPD_ARCHIVE"
+
+GEPD_ARCHIVE = Path(GEPD_ARCHIVE)
+
+try:
+  j1 = [ Path(j) / "pd.json" for j in sorted( os.listdir(GEPD_ARCHIVE)) ][-2]
+  j2 = [ Path(j) / "pd.json" for j in sorted( os.listdir(GEPD_ARCHIVE)) ][-1]
+  # jm = [ Path(m) / "pd.json" for m in sorted(os.listdir(GEPD_ARCHIVE)) if "master" in m][-1]
+except Exception as ex:
+  logging.error("Failed to get pd.json. try running at least two psake builds, plus one clean build on master and check your GEPD_ARCHIVE")
+  raise
+
+
+def reverse_pd(j) -> dict:
+  return {
+    "functions": {
+      v:k for k,v in j['functions'].items()
+    },
+    "variables": {
+      v:k for k,v in j['variables'].items()
+    }
+  }
+
+j1_data = None
+j2_data = None
+
+with open(GEPD_ARCHIVE / j1, "r") as f:
+  j1_data = json.load(f)
+
+with open(GEPD_ARCHIVE / j2, "r") as f:
+  j2_data = json.load(f)
+
+# with open(GEPD_ARCHIVE / jm, "r") as f:
+#   m_data = json.load(f)
+
+j1_data_reverse = reverse_pd(j1_data)
+j2_data_reverse = reverse_pd(j2_data)
+# m_data_reverse = reverse_pd(m_data)
+
+# logging.debug(json.dumps(j1_data_reverse, indent=2))
+
+def get_diffs(k):
+  for o, func_o in j1_data[k].items():
+    try:
+      p = j2_data_reverse[k][func_o]
+    except:
+      logging.error(f"unable to find {func_o} in j2")
+    # m = m_data_reverse[k][func_o]
+    offset = -int(o, 16) + int(p, 16)
+    # offset_m_o = -int(m, 16) + int(o, 16)
+    # offset_m_p = -int(m, 16) + int(p, 16)
+    if o == p:
+      pass
+      # logging.info(f"{func_o} matches")
+    else:
+      logging.error(f"{func_o} does not match, offset: {hex(offset)}")
+
+
+get_diffs('functions')
+get_diffs('variables')

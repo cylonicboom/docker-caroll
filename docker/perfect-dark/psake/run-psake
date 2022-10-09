@@ -15,6 +15,9 @@ $paramTable = [Text.Encoding]::Utf8.GetString([Convert]::FromBase64String($Param
 
 
 # scrubbing commands
+get-childitem env:\ | format-table
 $paramTable | Format-Table
 $paramTable.remove('command')
 invoke-psake @paramTable
+$paramTable | Format-Table
+get-childitem env:\ | format-table
