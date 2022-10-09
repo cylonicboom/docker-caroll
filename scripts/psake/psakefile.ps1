@@ -106,14 +106,14 @@ task make-mouseinjector -preaction {
     pushd $env:MOUSEINJECTOR
       make -j || write-error "make-mouseinjector failed!"
     popd
-
-} -postaction {
     $env:task_make_mouseinjector = "pass"
-} -depends "make-perfectdark", "root"
+} -postaction {
+} -depends  "root"
 task clean-mouseinjector -action {
     $env:task_clean_mouseinjector = "fail"
     pushd $env:MOUSEINJECTOR
       make clean
+      mkdir -p obj
     popd
     $env:task_clean_mouseinjector = "pass"
 } -depends "root"
