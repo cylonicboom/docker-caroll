@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+import os
+import json
+import sys
+import subprocess
+import tempfile
+import logging
+import datetime
+logging.basicConfig(
+    level=logging.DEBUG,
+    handlers=[logging.StreamHandler(sys.stderr)]
+)
+from pathlib import Path
+
+
+# side effect: places in /app/gepd_archive
+# TODO: offload to another installation script
+# side effect clobbers and unzips to /app/gepd_target
+
+from _env import *
+
+def check_call(*args, **kwargs):
+  logging.debug(f"check_call: {args} {kwargs}")
+  return subprocess.check_call(*args, **kwargs)
+
+def new_GepdBundleBom():
+  return {
+    "tag": os.getenv('DC_BUILD_TAG', 'latest'),
+  }
+
+
+with tempfile.TemporaryDirectory() as t:
+  t = Path(t)
+
+  # unzip GEPD_ZIP into t
+  check_call(["unzip", GEPD_ZIP], cwd=t)
+
+  # copy our content - 1964 static
+  # for our rsync command we force it back to a string to append an '/'
+  check_call(["rsync", "-aizvP", f"{Path(PDSHARE) / '1964'}/", t / "1964"])
+
+  # copy our content - generated cfg
+  cfg_file = t / "1964/1964.cfg"
+  with open(cfg_file, "w") as f:
+    check_call([ f"{PDPYTHON}/new-cfg" ], stdout=f)
+  check_call([ "cat" , cfg_file ])
+
+  #  copy our content - Mouse Injector
+  mi_src = Path(MOUSEINJECTOR) / "Mouse_Injector.dll"
+  mi_dest = t / "1964/plugin/Mouse_Injector.dll"
+  check_call(["cp", "-rvf", mi_src, mi_dest], cwd=t)
+  check_call(["ls", "-lah",  mi_dest], cwd=t)
+
+  # drop bom.json inside 1964 layout
+  with open(t / "bom.json", "w") as f:
+    print(json.dumps(new_GepdBundleBom(), indent=2), file=f)
+
+  with open(Path(GEPD_ARCHIVE) / DC_BUILD_TAG / "bom.json", "w") as f:
+    print(json.dumps(new_GepdBundleBom(), indent=2), file=f)
+
+  check_call( [ "tar", "-cjvf", Path(GEPD_ARCHIVE) / DC_BUILD_TAG / f"gepd.tar.bz2", "-C", t, "." ] )
+  check_call( [ "tar", "-xvjf", Path(GEPD_ARCHIVE) / DC_BUILD_TAG / f"gepd.tar.bz2" ], cwd = Path(GEPD_TARGET))
+  check_call(["find"], cwd=t)

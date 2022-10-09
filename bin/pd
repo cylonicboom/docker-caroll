@@ -14,11 +14,12 @@ logging.basicConfig(
 
 import getopt
 
+IMAGE_NAME = "docker-caroll"
+HOSTNAME = "docker-caroll"
+
 get_opt = getopt.getopt
 
 args = {}
-
-
 
 def parse_pd_cli_args():
   global args
@@ -67,75 +68,124 @@ def parse_pd_cli_args():
 
 get_env = os.environ.get
 
+class PDEnv:
+  def __init__(self):
+    # mounts and environemnt varialbes as they appear in docker container
+    self._pd_env_vars = {
 
-# personalization
-IMAGE_NAME = "docker-caroll"
-HOSTNAME = "docker-caroll"
+      # ryan / perfect-dark
+      "PD": "/app/perfect-dark",
+      'PIRACYCHECKS': get_env('PIRACYCHECKS', '1'),
+      'ROMID': get_env('ROMID', 'ntsc-final'),
+      'PDTOOLS': "/app/pdtools",
 
+      # catherine / MouseInjector
+      # These are meant to be passed as-is to the container
+      # to override the windows-bits in the makefile
+      "MOUSEINJECTOR":  "/app/MouseInjector",
+      'MINGWDIR' :  '/usr/bin',
+      'CC' :  '/usr/bin/i686-w64-mingw32-gcc-win32',
+      'WINDRES': "/usr/bin/i686-w64-mingw32-windres",
+
+      'GEPD_ZIP' : "/app/gepd.zip",
+      'GEPD_ARCHIVE' : "/app/gepd_archive",
+      'GEPD_TARGET' : "/app/gepd_target",
+
+      # system env
+      "SSH_AUTH_SOCK":  '/ssh-agent',
+    }
+    # NOTE: check that environment variables above are set
+    # warn if not set. A lot of this is optional
+    for k,v in self._pd_env_vars.items():
+      try:
+        assert self._pd_env_vars[k], logging.warning(f"failed to detect environment variable value for {k}")
+      except: pass
+
+    self._pd_env_paths = {
+      # Used by Ryan's pdtools. I'm using it to pick up the mount dir
+      # for perfect-dark builds
+      #~/src/perfect-dark
+      'PD' : get_env('PD'),
+      'PDTOOLS': get_env('PDTOOLS'),
+
+      # Mouse Injector dir
+      # ~/src/MouseInjectorPlugin
+      "MOUSEINJECTOR" : get_env('MOUSEINJECTOR'),
+
+      # psake content
+      # this is almost always just whatever is packaged with this repo
+      # but I was thinking of enabling an override
+      'PDPSAKE': get_env('PDPSAKE', f"{Path(__file__ ).parents[0].resolve()}/scripts/psake"),
+      'PDPYTHON': get_env('PDPYTHON', f"{Path(__file__ ).parents[0].resolve()}"),
+      'PDSHARE': get_env('PDSHARE', f"{Path(__file__ ).parents[0].resolve()}/../share"),
+
+      'GEPD_ZIP': get_env('GEPD_ZIP'),
+      'GEPD_ARCHIVE': get_env('GEPD_ARCHIVE'),
+      'GEPD_TARGET': get_env('GEPD_TARGET'),
+
+      # ssh
+      'SSH_AUTH_SOCK' : get_env('SSH_AUTH_SOCK')
+    }
+    # NOTE: check that environment variables above are set...or things will fail
+    for k,v in self._pd_env_paths.items():
+      assert self._pd_env_paths[k], logging.error(f"failed to detect environment variable value for {k}")
+
+    self._pd_mounts = {
+      # build mounts
+      self._pd_env_paths['PD'] : '/app/perfect-dark',
+      self._pd_env_paths['MOUSEINJECTOR']: '/app/MouseInjector',
+
+      # tooling mounts
+      self._pd_env_paths['PDPSAKE']: "/app/psake",
+      self._pd_env_paths['PDPYTHON']: "/app/python",
+      self._pd_env_paths['PDSHARE']: "/app/share",
+      self._pd_env_paths['PDTOOLS']: "/app/pdtools",
+
+      # resource mounts
+      self._pd_env_paths['GEPD_ZIP']: "/app/gepd.zip",
+      self._pd_env_paths['GEPD_ARCHIVE']: "/app/gepd_archive",
+      self._pd_env_paths['GEPD_TARGET']: "/app/gepd_target",
+
+      # system mount
+      self._pd_env_paths['SSH_AUTH_SOCK']: "/ssh-agent"
+    }
+
+    self._pd_env_vars.update({
+      # docker-only variable for marshing host-PD as data
+      'PD_HOST' : self._pd_env_paths['PD'],
+      'PDSHARE' : self.get_pd_mount('PDSHARE'),
+      'PDPYTHON' : self.get_pd_mount('PDPYTHON'),
+      'GEPD_TARGET_HOST': self._pd_env_paths['GEPD_TARGET'],
+      'GEPD_ARCHIVE_HOST': self._pd_env_paths['GEPD_ARCHIVE'],
+    })
+
+    # special MouseInjector compiler flags
+    if get_env('DEBUG_BUILD'):
+      self._pd_env_vars.update({
+        'DEBUG_BUILD': get_env('DEBUG_BUILD')
+      })
+
+    if get_env('USE_DISCORD_PRESENCE'):
+      self._pd_env_vars.update({
+        'USE_DISCORD_PRESENCE': get_env('USE_DISCORD_PRESENCE')
+      })
+
+    if get_env('SPEEDRUN_BUILD'):
+      self._pd_env_vars.update({
+        'SPEEDRUN_BUILD': get_env('SPEEDRUN_BUILD')
+      })
+
+  def get_pd_mount(self, k):
+    return self._pd_mounts[self._pd_env_paths[k]]
+
+pd_env = PDEnv()
 
 # First, we collect or set these build-related environment variables from the host environment
-pd_env_vars = {
-  # ryan / perfect-dark
-  'PIRACYCHECKS': get_env('PIRACYCHECKS', '1'),
-  'ROMID': get_env('ROMID', 'ntsc-final'),
-
-  # catherine / MouseInjector
-  # These are meant to be passed as-is to the container
-  # to override the windows-bits in the makefile
-  'MINGWDIR' : get_env('MINGWDIR', '/usr/bin'),
-  'CC' : get_env('CC', '/usr/bin/i686-w64-mingw32-gcc-win32'),
-  'WINDRES': get_env('WINDRES', "/usr/bin/i686-w64-mingw32-windres"),
-
-   # where to copy pd / mouseinjector when done
-   # falsey / no-op if not set
-   # Optional for building
-  'HOST1964' : get_env('HOST1964', ''),
-  'ED64HOST': get_env("ED64HOST", ''),
-  'PDDEST': get_env('PDDEST', ''),
-  'MOUSEINJECTORDEST': get_env('MOUSEINJECTORDEST', '')
-}
-# NOTE: check that environment variables above are set
-# warn if not set. A lot of this is optional
-for k,v in pd_env_vars.items():
-  try:
-    assert pd_env_vars[k], logging.warning(f"failed to detect environment variable value for {k}")
-  except: pass
-
-# intermediate dict to map local paths to container paths
+pd_env_vars = pd_env._pd_env_vars
 # location of path-likes on host system
-pd_env_paths = {
-  # Used by Ryan's pdtools. I'm using it to pick up the mount dir
-  # for perfect-dark builds
-  #~/src/perfect-dark
-  'PD' : get_env('PD'),
-
-  # Mouse Injector dir
-  # ~/src/MouseInjectorPlugin
-  "MOUSEINJECTOR" : get_env('MOUSEINJECTOR'),
-
-  # psake content
-  # this is almost always just whatever is packaged with this repo
-  # but I was thinking of enabling an override
-  'PDPSAKE': get_env('PDPSAKE', f"{Path(__file__ ).parents[0].resolve()}/scripts/psake"),
-
-  # ssh
-  'SSH_AUTH_SOCK' : get_env('SSH_AUTH_SOCK')
-
-}
-# NOTE: check that environment variables above are set...or things will fail
-for k,v in pd_env_paths.items():
-  assert pd_env_paths[k], logging.error(f"failed to detect environment variable value for {k}")
-
-
+pd_env_paths = pd_env._pd_env_paths
 # resolve mounts to pass to docker for build
-#
-# $host_dir : $docker_mount_point
-pd_mounts = {
-  pd_env_paths['PD'] : '/app/perfect-dark',
-  pd_env_paths['MOUSEINJECTOR']: '/app/MouseInjector',
-  pd_env_paths['PDPSAKE']: "/app/psake",
-  pd_env_paths['SSH_AUTH_SOCK']: "/ssh-agent"
-}
+pd_mounts = pd_env._pd_mounts
 
 
 def print_host_env():
@@ -309,11 +359,6 @@ def docker_cmd(image_name = IMAGE_NAME,
       nethost,
       hosttr,
       *[
-        # the build tools need these env vars to corespond to mount dirs
-        environment_variable("PD", "/app/perfect-dark"),
-        environment_variable("MOUSEINJECTOR", "/app/MouseInjector"),
-        environment_variable("SSH_AUTH_SOCK", '/ssh-agent'),
-
         # everything else can be passed as-is
         *[environment_variable(k,v) for k,v in pd_env_vars.items()]
       ],

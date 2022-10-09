@@ -5,7 +5,7 @@ IFS=$'\n\t'
 
 start(){
 
-  (exec steam steam://rungameid/9663529678475886592) 2>&1 > /dev/null
+  (exec steam steam://rungameid/$GEPD_STEAM_GAMEID) 2>&1 > /dev/null
   # TODO: start obs to start recording gepd
   # obs uses '.' as your savedir
 

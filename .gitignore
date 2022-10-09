@@ -1,2 +1,6 @@
 .env
 1964.cfg
+save
+*.tmp
+*.swp
+__pycache__
