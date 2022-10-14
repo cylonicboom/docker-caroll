@@ -58,4 +58,6 @@ ENV PATH="/app/pdtools/bin:$PATH"
 # set sauce symlink workdir
 WORKDIR /pd
 
+RUN apt-get update && apt-get install -y gcc-mips-linux-gnu
+
 entrypoint tail -f /dev/null
