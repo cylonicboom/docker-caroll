@@ -28,6 +28,10 @@ def new_GepdBundleBom():
     "tag": os.getenv('DC_BUILD_TAG', 'latest'),
   }
 
+def get_mouseinjector_suffix():
+  if os.getenv('SPEEDRUN_BUILD'): return "_Speedrun"
+  return ""
+
 
 with tempfile.TemporaryDirectory() as t:
   t = Path(t)
@@ -46,7 +50,7 @@ with tempfile.TemporaryDirectory() as t:
   check_call([ "cat" , cfg_file ])
 
   #  copy our content - Mouse Injector
-  mi_src = Path(MOUSEINJECTOR) / "Mouse_Injector.dll"
+  mi_src = Path(MOUSEINJECTOR) / f"Mouse_Injector{get_mouseinjector_suffix()}.dll"
   mi_dest = t / "1964/plugin/Mouse_Injector.dll"
   check_call(["cp", "-rvf", mi_src, mi_dest], cwd=t)
   check_call(["ls", "-lah",  mi_dest], cwd=t)
