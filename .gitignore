@@ -4,3 +4,4 @@ save
 *.tmp
 *.swp
 __pycache__
+*.exe
