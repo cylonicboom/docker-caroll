@@ -60,4 +60,6 @@ WORKDIR /pd
 
 RUN apt-get update && apt-get install -y gcc-mips-linux-gnu
 
+RUN apt-get update && apt-get install -y wine mono-complete
+
 entrypoint tail -f /dev/null
