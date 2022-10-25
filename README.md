@@ -7,6 +7,7 @@ The `pd` wrapper itself has no dependencies beyond docker, git, and a recent pyt
 
 Dependencies for this project and perfect-dark will be downloaded and contained within the docker image.
 
+
 ``` bash
 git clone git@gitlab.com:NeonNyan/docker-caroll.git ~/src/docker-caroll
 cd ~/src/docker-caroll
@@ -42,6 +43,8 @@ export GEPD_ARCHIVE="${HOME}/.local/var/docker-caroll/archive"
 # docker-caroll: location to install gepd bundle
 export GEPD_TARGET="${HOME}/.local/opt/1964_mod"
 # GameID of GEPD steam installation
+# follow graslu00's guide to set this up: 
+# https://www.youtube.com/watch?v=-Wq0NQNfk1M&t=5s
 export GEPD_STEAM_GAMEID="1234567890"
 ```
 
