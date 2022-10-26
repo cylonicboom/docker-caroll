@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+from leylinelib import *
+
+def get_current_leyline():
+  r = None
+  with open(core.CURRENT_BUILD_ARCHIVE / "leyline.json") as l:
+    r = json.loads("".join(l.readlines()))
+  return r
+
+def get_A_by_address(address):
+  leyline = get_current_leyline()
+  return "0x" + [l for l in leyline['a2b'] if l['a_address'] == address.replace("0x","")][0]['b_address']
+
+def get_gvars_address():
+  if not core.DECOMP_BUILD:
+    return "0x80099fc0"
+  return get_A_by_address("0x80099fc0")
+
+def get_players_with_control_address():
+  if not core.DECOMP_BUILD:
+    return "0x80070750"
+  return get_A_by_address("0x80070750")
+
+def get_pd_pause_address():
+  if not core.DECOMP_BUILD:
+    return "0x80084014"
+  return get_A_by_address("0x80084014")
+
+def get_stage_address():
+  if not core.DECOMP_BUILD:
+    return "0x800624e4"
+  return get_A_by_address("0x800624e4")
+
+def new_pd_header():
+  return f"""
+/*
+    address 0x8009a024
+    symbol g_Vars offset 0x64
+*/
+#define JOANNADATA(X) (unsigned int)EMU_ReadInt(({get_gvars_address()} + 0x64) + (X * 0x4)) // player pointer address (0x4 offset for each players)
+/*
+    address 0x80070750
+    symbol g_PlayersWithControl
+*/
+#define PD_menu(X) {get_players_with_control_address()} + (X * 0x4) // player menu flag (0 = PD is in menu) (0x4 offset for each players)
+
+/*
+    address 0x8009a26c
+    symbol g_Vars offset 0x2ac
+*/
+#define PD_camera {get_gvars_address()} + 0x2ac // camera flag (1 = gameplay, 2 & 3 = ???, 4 = multiplayer sweep, 5 = gameover screen, 6 = cutscene mode, 7 = force player to move: extraction's dark room)
+/*
+    address 0x80084014
+    symbol var80084014
+*/
+#define PD_pause {get_pd_pause_address()} // menu flag (1 = PD is paused)
+/*
+    address 0x800624e4
+    symbol g_TitleNextStage
+*/
+#define PD_stageid {get_stage_address()} // stage id
+  """
+
+print( new_pd_header() )

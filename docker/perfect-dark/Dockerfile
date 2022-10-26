@@ -9,7 +9,7 @@ WORKDIR /tmp
 RUN git clone --recursive https://github.com/Kingcom/armips.git && cd armips && \
 mkdir build && cd build && cmake .. && cmake --build . --config Release && cp armips /usr/bin
 
-FROM ubuntu:22.04
+FROM ubuntu:22.10
 ENV LANG=en_US.UTF-8
 # Fix timezone issue
 ENV TZ=UTC
@@ -18,20 +18,11 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # pwsh + psake
 WORKDIR /tmp
 
+run apt-get update && apt-get install -y wget
 # pasted and modified from msdn pwsh install page
-run apt-get update &&\
-# Install pre-requisite packages.
-apt-get install -y wget git apt-transport-https software-properties-common &&\
-# Download the Microsoft repository GPG keys &&\
-wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb" &&\
-# Register the Microsoft repository GPG keys &&\
-dpkg -i packages-microsoft-prod.deb &&\
-# Update the list of packages after we added packages.microsoft.com &&\
-apt-get update &&\
-# Install PowerShell &&\
-apt-get install -y powershell
+run wget https://github.com/PowerShell/PowerShell/releases/download/v7.2.6/powershell-lts_7.2.6-1.deb_amd64.deb && dpkg -i powershell-lts_7.2.6-1.deb_amd64.deb || apt-get -fy install
 
-
+run apt-get install -y git
 # can containers start other containers?
 # if so than I can make another image for psake
 run git clone https://github.com/psake/psake.git /opt/psake

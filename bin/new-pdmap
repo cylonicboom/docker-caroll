@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+import json
+import sys
+
+from leylinelib.pdmap import new_pdmap
+
+# fill in from output json
+#
+
+LAST_PD_B_MAP=sys.argv[1]
+
+with open(LAST_PD_B_MAP, "r") as B:
+  b_data = json.loads(''.join(B.readlines()))
+
+print(json.dumps(new_pdmap(None,b_data), indent=2))

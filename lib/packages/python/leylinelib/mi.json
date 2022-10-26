@@ -1,0 +1,86 @@
+[
+  {
+    "mi_name": "PD_camera",
+    "mi_address": "0x8009A26C"
+  },
+  {
+    "mi_name": "PD_pause",
+    "mi_address": "0x80084014"
+  },
+  {
+    "mi_name": "PD_stageid",
+    "mi_address": "0x800624E4"
+  },
+  {
+    "mi_name": "PD_debugtext",
+    "mi_address": "0x803C79F0"
+  },
+  {
+    "mi_name": "PD_mppause",
+    "mi_address": "0x800ACBA6"
+  },
+  {
+    "mi_name": "PD_defaultratio",
+    "mi_address": "0x803CD680"
+  },
+  {
+    "mi_name": "PD_defaultfov",
+    "mi_address": "0x802EAA5C"
+  },
+  {
+    "mi_name": "PD_defaultfovzoom",
+    "mi_address": "0x802EACFC"
+  },
+  {
+    "mi_name": "PD_defaultzoominspeed",
+    "mi_address": "0x802DA8F8"
+  },
+  {
+    "mi_name": "PD_defaultzoomoutspeed",
+    "mi_address": "0x802DA924"
+  },
+  {
+    "mi_name": "PD_introcounter",
+    "mi_address": "0x800624C4"
+  },
+  {
+    "mi_name": "PD_controlstyle",
+    "mi_address": "0x80372728"
+  },
+  {
+    "mi_name": "PD_reversepitch",
+    "mi_address": "0x803727A0"
+  },
+  {
+    "mi_name": "PD_pickupyaxisthreshold",
+    "mi_address": "0x803CAE78"
+  },
+  {
+    "mi_name": "PD_weapontable",
+    "mi_address": "0x8006FF1C"
+  },
+  {
+    "mi_name": "PD_radialmenutimer",
+    "mi_address": "0x802EA2BC"
+  },
+  {
+    "mi_name": "PD_radialmenualphainit",
+    "mi_address": "0x803D2CDC"
+  },
+  {
+    "mi_name": "PD_blurfix",
+    "mi_address": "0x802DB68C"
+  },
+  {
+    "mi_name": "PD_hiresoption",
+    "mi_address": "0x80322D9C"
+  },
+  {
+    "mi_name": "PD_camspylookspringup",
+    "mi_address": "0x802F13E8"
+  },
+  {
+    "mi_name": "PD_camspylookspringdown",
+    "mi_address": "0x802F143C"
+  }
+]

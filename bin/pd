@@ -77,7 +77,7 @@ class PDEnv:
       "PD": "/app/perfect-dark",
       'PIRACYCHECKS': get_env('PIRACYCHECKS', '1'),
       'MATCHING': get_env('MATCHING', '1'),
-      'COMPILER': get_env('COMPILER', 'gcc'),
+      'COMPILER': get_env('COMPILER', 'ido'),
       'ROMID': get_env('ROMID', 'ntsc-final'),
       'PDTOOLS': "/app/pdtools",
 
@@ -92,6 +92,8 @@ class PDEnv:
       'GEPD_ZIP' : "/app/gepd.zip",
       'GEPD_ARCHIVE' : "/app/gepd_archive",
       'GEPD_TARGET' : "/app/gepd_target",
+
+      "LEYLINELIB": "/app/leylinelib",
 
       # system env
       "SSH_AUTH_SOCK":  '/ssh-agent',
@@ -125,6 +127,8 @@ class PDEnv:
       'GEPD_ARCHIVE': get_env('GEPD_ARCHIVE'),
       'GEPD_TARGET': get_env('GEPD_TARGET'),
 
+      'LEYLINELIB': get_env('LEYLINELIB', str(Path(__file__).parents[1] / "lib/packages/python")),
+
       # ssh
       'SSH_AUTH_SOCK' : get_env('SSH_AUTH_SOCK')
     }
@@ -142,6 +146,7 @@ class PDEnv:
       self._pd_env_paths['PDPYTHON']: "/app/python",
       self._pd_env_paths['PDSHARE']: "/app/share",
       self._pd_env_paths['PDTOOLS']: "/app/pdtools",
+      self._pd_env_paths['LEYLINELIB']: "/usr/lib/python3/dist-packages",
 
       # resource mounts
       self._pd_env_paths['GEPD_ZIP']: "/app/gepd.zip",
@@ -175,6 +180,11 @@ class PDEnv:
     if get_env('SPEEDRUN_BUILD'):
       self._pd_env_vars.update({
         'SPEEDRUN_BUILD': get_env('SPEEDRUN_BUILD')
+      })
+
+    if get_env('DECOMP_BUILD'):
+      self._pd_env_vars.update({
+        'DECOMP_BUILD': get_env('DECOMP_BUILD')
       })
 
   def get_pd_mount(self, k):

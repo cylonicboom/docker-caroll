@@ -71,11 +71,14 @@ task make-perfectdark -depends "root" -preAction {
     # rebuild mkrom every time
     pushd tools/mkrom
       make clean
-      make "$(gci env:/ | ?{$_.key -notin @("_", "HOME", "PSMODULEPATH", "PATH", "SHLVL", "LANG", "SSH_AUTH_SOCK", "TERM", "HOSTNAME")} | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
+      make
     popd
 
+    $make_envs = "$(gci env:/ | ?{$_.key -in @("COMPILER", "MATCHING")} | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
+    $make_cmd = "make -j $($make_envs)"
+    Write-Information "PD make command: $($make_cmd)"
     # make perfect-dark
-    make -j || write-error "make-perfectdark failed"
+    Invoke-Expression $make_cmd || write-error "make-perfectdark failed"
   popd
 } -postAction {
   # copy
@@ -94,6 +97,10 @@ task make-perfectdark -depends "root" -preAction {
       mv -v pd.z64 $env:GEPD_ARCHIVE/$env:DC_BUILD_TAG/pd.z64 || write-error "Failed to move rom"
       ln -s $env:GEPD_ARCHIVE_HOST/$env:DC_BUILD_TAG/pd.z64 pd.z64 || write-error "Failed to setup symlink"
 
+      pushd $env:GEPD_ARCHIVE/$env:DC_BUILD_TAG
+        /app/python/new-pdmap pd.json > leyline.json
+      popd
+
       # write-Information "archiving pd rom"
     popd
   popd
@@ -102,6 +109,11 @@ task make-perfectdark -depends "root" -preAction {
 task make-mouseinjector -preaction {
     $env:task_make_mouseinjector = "fail"
     Write-Information "make-mouseinjector: begin"
+
+    pushd $env:MOUSEINJECTOR/games
+      rm perfectdark.generated.h -f
+      /app/python/mk-pdheader > perfectdark.generated.h
+    popd
 } -action{
     pushd $env:MOUSEINJECTOR
       make -j || write-error "make-mouseinjector failed!"
