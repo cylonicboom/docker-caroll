@@ -71,7 +71,7 @@ task make-perfectdark -depends "root" -preAction {
     # rebuild mkrom every time
     pushd tools/mkrom
       make clean
-      make
+      make "$(gci env:/ | ?{$_.key -notin @("_", "HOME", "PSMODULEPATH", "PATH", "SHLVL", "LANG", "SSH_AUTH_SOCK", "TERM", "HOSTNAME")} | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
     popd
 
     # make perfect-dark
