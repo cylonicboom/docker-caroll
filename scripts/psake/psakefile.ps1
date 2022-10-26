@@ -71,11 +71,14 @@ task make-perfectdark -depends "root" -preAction {
     # rebuild mkrom every time
     pushd tools/mkrom
       make clean
-      make "$(gci env:/ | ?{$_.key -notin @("_", "HOME", "PSMODULEPATH", "PATH", "SHLVL", "LANG", "SSH_AUTH_SOCK", "TERM", "HOSTNAME")} | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
+      make
     popd
 
+    $make_envs = "$(gci env:/ | ?{$_.key -in @("COMPILER", "MATCHING")} | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
+    $make_cmd = "make -j $($make_envs)"
+    Write-Information "PD make command: $($make_cmd)"
     # make perfect-dark
-    make -j || write-error "make-perfectdark failed"
+    Invoke-Expression $make_cmd || write-error "make-perfectdark failed"
   popd
 } -postAction {
   # copy

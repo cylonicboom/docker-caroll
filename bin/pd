@@ -76,8 +76,8 @@ class PDEnv:
       # ryan / perfect-dark
       "PD": "/app/perfect-dark",
       'PIRACYCHECKS': get_env('PIRACYCHECKS', '1'),
-      'MATCHING': get_env('MATCHING', '1'),
-      'COMPILER': get_env('COMPILER', 'gcc'),
+      'MATCHING': get_env('MATCHING', '0'),
+      'COMPILER': get_env('COMPILER', 'ido'),
       'ROMID': get_env('ROMID', 'ntsc-final'),
       'PDTOOLS': "/app/pdtools",
 
