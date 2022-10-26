@@ -5,3 +5,4 @@ save
 *.swp
 __pycache__
 *.exe
+*_data.json
