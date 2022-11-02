@@ -32,6 +32,11 @@ def get_stage_address():
     return "0x800624e4"
   return get_A_by_address("0x800624e4")
 
+def get_mpsetup_address():
+  if not core.DECOMP_BUILD:
+    return "0x800acb88"
+  return get_A_by_address("0x800acb88")
+
 def new_pd_header():
   return f"""
 /*
@@ -60,6 +65,11 @@ def new_pd_header():
     symbol g_TitleNextStage
 */
 #define PD_stageid {get_stage_address()} // stage id
+/*
+    address 0x800acba6
+    symbol g_MpSetup offset 0x1e
+*/
+#define PD_mppause {get_mpsetup_address()} + 0x1e // used to check if multiplayer match is paused
   """
 
 print( new_pd_header() )
