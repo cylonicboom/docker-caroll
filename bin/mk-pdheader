@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
 
+import sys
+from pathlib import Path
 from leylinelib import *
 
+LEYLINE_FILE=core.CURRENT_BUILD_ARCHIVE / "leyline.json"
+try:
+  LEYLINE_FILE=Path(sys.argv[1])
+except:
+  pass
+
+logging.debug(f"leylinefile: {LEYLINE_FILE}")
 def get_current_leyline():
   r = None
-  with open(core.CURRENT_BUILD_ARCHIVE / "leyline.json") as l:
+  with open(LEYLINE_FILE) as l:
     r = json.loads("".join(l.readlines()))
   return r
 
