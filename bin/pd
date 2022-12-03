@@ -70,7 +70,7 @@ get_env = os.environ.get
 
 class PDEnv:
   def __init__(self):
-    # mounts and environemnt varialbes as they appear in docker container
+    # mounts and environemnt varialbes as they appear in OCI container
     self._pd_env_vars = {
 
       # ryan / perfect-dark
@@ -153,7 +153,7 @@ class PDEnv:
     }
 
     self._pd_env_vars.update({
-      # docker-only variable for marshing host-PD as data
+      # container-only variable for marshing host-PD as data
       'PD_HOST' : self._pd_env_paths['PD'],
       'PDSHARE' : self.get_pd_mount('PDSHARE'),
       'PDPYTHON' : self.get_pd_mount('PDPYTHON'),
@@ -186,7 +186,7 @@ pd_env = PDEnv()
 pd_env_vars = pd_env._pd_env_vars
 # location of path-likes on host system
 pd_env_paths = pd_env._pd_env_paths
-# resolve mounts to pass to docker for build
+# resolve mounts to pass to ephemeral container for build
 pd_mounts = pd_env._pd_mounts
 
 
@@ -238,19 +238,19 @@ def get_pdroot(path: Path = os.getcwd()) -> Path:
 def create_docker_caroll(**kwargs):
   if not kwargs: kwargs = {}
   kwargs['command'] = ''
-  kwargs['docker_options'] = '-d'
+  kwargs['container_options'] = '-d'
   kwargs['runner'] = subprocess.check_output
   kwargs['current_user'] = False
-  container_id = docker_cmd(**kwargs).decode('utf-8').strip()
+  container_id = container_cmd(**kwargs).decode('utf-8').strip()
   logging.debug(f'container_id: {container_id}')
   return container_id
 
 
-def docker_exec(**kwargs):
+def container_exec(**kwargs):
   if not kwargs: kwargs = {}
-  kwargs['docker_cmd'] = 'exec'
-  kwargs['docker_resource'] = kwargs['container_id']
-  docker_cmd(**kwargs)
+  kwargs['container_cmd'] = 'exec'
+  kwargs['container_ref'] = kwargs['container_id']
+  container_cmd(**kwargs)
 
 
 def psake(**kwargs):
@@ -273,20 +273,20 @@ def psake(**kwargs):
   kwargs['command'] = base_psake_command
   # need to run docker_caroll w/ mounts
   # mount our psake scripts
-  docker_exec(**kwargs)
+  container_exec(**kwargs)
 
 
 # all the other dockery things will eventually run this
-def docker_cmd(image_name = IMAGE_NAME,
+def container_cmd(image_name = IMAGE_NAME,
     hostname = HOSTNAME,
     command = "",
-    docker_options = "-it",
-    docker_cmd = 'run',
+    container_options = "-it",
+    container_cmd = 'run',
     current_user = True,
     params=None,
     mounts=None,
     # image or container ID
-    docker_resource = IMAGE_NAME,
+    container_ref = IMAGE_NAME,
     runner = subprocess.check_call,
     stdout_null = False,
     **kwargs):
@@ -297,7 +297,7 @@ def docker_cmd(image_name = IMAGE_NAME,
 
     if isinstance(params, dict):
       params_tail = params.get('params', [])
-    #logging.debug(f'docker_cmd: {locals()}')
+    #logging.debug(f'container_cmd: {locals()}')
     if not mounts: mounts = {}
     def working_directory(command):
       # default: /app
@@ -347,7 +347,7 @@ def docker_cmd(image_name = IMAGE_NAME,
     homestr = f"-v {get_env('HOME')}:/home/u1"
     hosttr = f'-h={hostname}'
     nethost = ""
-    if docker_cmd != 'run':
+    if container_cmd != 'run':
       rmstr = ''
       hosttr = ''
       homestr = ''
@@ -355,8 +355,8 @@ def docker_cmd(image_name = IMAGE_NAME,
     if not current_user:
       userstr = ''
 
-    docker_command = " ".join([
-      f"docker {docker_cmd}",
+    container_command = " ".join([
+      f"docker {container_cmd}",
       # pretty hostname for terminal
       nethost,
       hosttr,
@@ -366,23 +366,23 @@ def docker_cmd(image_name = IMAGE_NAME,
       ],
       # # sensible permissions for generated artifacts
       userstr,
-      *[bind_mount(k, v) for k,v in pd_mounts.items() if docker_cmd == 'run'],
+      *[bind_mount(k, v) for k,v in pd_mounts.items() if container_cmd == 'run'],
       homestr,
       working_directory(command),
       # interactive terminal
-      docker_options,
+      container_options,
       # clean up after ourselves
       rmstr,
       # image name
-      docker_resource,
+      container_ref,
       # command to run. usually bash or some invocation of make
       command,
       *[p for p in params_tail]
     ])
     if stdout_null:
-      docker_command = f"{docker_command} > /dev/null"
-    logging.info(docker_command)
-    return runner(docker_command, shell=True)
+      container_command = f"{container_command} > /dev/null"
+    logging.info(container_command)
+    return runner(container_command, shell=True)
 
 
 def add_current_user(**kwargs):
@@ -392,7 +392,7 @@ def add_current_user(**kwargs):
   kwargs['command'] = "sh -c " + '"' + "[ -x /usr/sbin/useradd ] && useradd -m -u $(id -u) u1 -s /bin/sh || adduser -D -u $(id -u) u1 -s /bin/bash;" + '"'
   kwargs['current_user'] = False
   kwargs['stdout_null'] = True
-  docker_exec(**kwargs)
+  container_exec(**kwargs)
 
 
 def pd_cli(
@@ -425,7 +425,7 @@ def pd_cli(
       params['runner'] = subprocess.call
       try:
         if command not in cmds:
-          return docker_exec(**params)
+          return container_exec(**params)
         # TODO: exec 'invoke-command-as-user' script
         r = cmds[command](**params)
       except Exception as ex:
