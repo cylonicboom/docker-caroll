@@ -1,6 +1,13 @@
+PD_CONTAINER_MANAGER := $(PD_CONTAINER_MANAGER)
+
+ifeq ('', $(PD_CONTAINER_MANAGER))
+	PD_CONTAINER_MANAGER = 'podman'
+endif
+
+
 .PHONY: build
 build:
-	DATE=$(shell date -u +'%m-%d-%y.%H-%M-%S'); docker build ./docker/perfect-dark -t docker-caroll:latest -t docker-caroll:$$DATE --platform amd64
+	DATE=$(shell date -u +'%m-%d-%y.%H-%M-%S'); $(PD_CONTAINER_MANAGER) build ./docker/perfect-dark -t docker-caroll:latest -t docker-caroll:$$DATE
 
 .PHONY: clean
 clean:
