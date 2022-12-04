@@ -46,6 +46,7 @@ export GEPD_TARGET="${HOME}/.local/opt/1964_mod"
 # follow graslu00's guide to set this up: 
 # https://www.youtube.com/watch?v=-Wq0NQNfk1M&t=5s
 export GEPD_STEAM_GAMEID="1234567890"
+export PD_CONTAINER_MANAGER=podman
 ```
 
 ## Usage
