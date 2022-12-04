@@ -247,7 +247,7 @@ def get_pdroot(path: Path = os.getcwd()) -> Path:
 
 def create_docker_caroll(**kwargs):
   if not kwargs: kwargs = {}
-  kwargs['command'] = ''
+  kwargs['command'] = 'tail -f /dev/null'
   kwargs['container_options'] = '-d'
   kwargs['runner'] = subprocess.check_output
   kwargs['current_user'] = False
