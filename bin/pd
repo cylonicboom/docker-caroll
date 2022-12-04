@@ -353,7 +353,9 @@ def container_cmd(image_name = IMAGE_NAME,
 
 
     rmstr = '--rm'
-    userstr = "--user " +  str(os.getuid()) + ":" + str(os.getgid())
+    userstr = ''
+    if container_manager == 'docker':
+      userstr = "--user " +  str(os.getuid()) + ":" + str(os.getgid())
     homestr = f"-v {get_env('HOME')}:/home/u1"
     hosttr = f'-h={hostname}'
     nethost = ""
