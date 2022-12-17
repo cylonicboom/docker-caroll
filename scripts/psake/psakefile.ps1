@@ -37,7 +37,9 @@ task root {
 task clean-perfectdark -depends "root" -action {
     $env:task_clean_perfectdark = "fail"
     pushd $env:PD
-      make clean
+      make allclean
+      rm -rf build/$env:ROMID
+      make extract
     popd
     $env:task_clean_perfectdark = "pass"
 }
@@ -74,7 +76,7 @@ task make-perfectdark -depends "root" -preAction {
       make
     popd
 
-    $make_envs = "$(gci env:/ | ?{$_.key -in @("COMPILER", "MATCHING")} | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
+    $make_envs = "$(gci env:/ | ?{$_.key -in @("COMPILER", "MATCHING", "SPEEDRUN_BUILD", "MI")} | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
     $make_cmd = "make -j $($make_envs)"
     Write-Information "PD make command: $($make_cmd)"
     # make perfect-dark
