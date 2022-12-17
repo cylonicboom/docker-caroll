@@ -197,6 +197,11 @@ class PDEnv:
         'DECOMP_BUILD': get_env('DECOMP_BUILD')
       })
 
+    if get_env('MI'):
+      self._pd_env_vars.update({
+        'MI': get_env('MI')
+      })
+
   def get_pd_mount(self, k):
     return self._pd_mounts[self._pd_env_paths[k]]
 
