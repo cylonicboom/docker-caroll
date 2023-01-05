@@ -76,7 +76,7 @@ task make-perfectdark -depends "root" -preAction {
       make
     popd
 
-    $make_envs = "$(gci env:/ | ?{$_.key -in @("COMPILER", "MATCHING", "SPEEDRUN_BUILD", "MI")} | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
+    $make_envs = "$(gci env:/ | ?{$_.key -in @("COMPILER", "MATCHING", "SPEEDRUN_BUILD", "MI", "PROFILING", "FOV", "GEMUZZLE")} | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
     $make_cmd = "make -j $($make_envs)"
     Write-Information "PD make command: $($make_cmd)"
     # make perfect-dark
@@ -112,10 +112,10 @@ task make-mouseinjector -preaction {
     $env:task_make_mouseinjector = "fail"
     Write-Information "make-mouseinjector: begin"
 
-    pushd $env:MOUSEINJECTOR/games
-      rm perfectdark.generated.h -f
-      /app/python/mk-pdheader > perfectdark.generated.h
-    popd
+    # pushd $env:MOUSEINJECTOR/games
+    #   rm perfectdark.generated.h -f
+    #   /app/python/mk-pdheader > perfectdark.generated.h
+    # popd
 } -action{
     pushd $env:MOUSEINJECTOR
       make -j || write-error "make-mouseinjector failed!"
@@ -132,7 +132,7 @@ task clean-mouseinjector -action {
     $env:task_clean_mouseinjector = "pass"
 } -depends "root"
 
-task make-gepdbundle -depends "make-perfectdark", "make-mouseinjector", "root" -action {
+task make-gepdbundle -depends "make-mouseinjector", "root" -action {
     $env:task_make_gepdbundle = "fail"
     if ( [string]::IsNullOrEmpty("$($env:GEPD_TARGET)".trim()) ) {
         write-error "GEPD_TARGET must be set"
@@ -145,4 +145,6 @@ task make-gepdbundle -depends "make-perfectdark", "make-mouseinjector", "root" -
 }
 
 task clean -depends "clean-mouseinjector", "clean-perfectdark"
-task build -depends "make-perfectdark", "make-mouseinjector", "make-gepdbundle"
+task buildall -depends "make-perfectdark", "make-mouseinjector", "make-gepdbundle"
+task mouseinjector -depends "clean-mouseinjector", "make-mouseinjector"
+task pd -depends "clean-perfectdark", "make-perfectdark"
