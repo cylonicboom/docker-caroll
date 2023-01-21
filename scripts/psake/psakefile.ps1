@@ -1,12 +1,16 @@
 #!/usr/bin env pwsh
 #
-#
-# TODO: store task status as environment variables
-# TODO: always print task time even if failed
-# TODO: provide $env:*_HOST for all docker mounts (except SSH_SOCK) so bundler scripts will work
-#   include documentaiton that non-docker users should dupe their _HOST variables
-# TODO: ensure it works w/o SSH_SOCK
 
+
+<#
+The purpose of this file is to automate/define a "happy path"
+for building Perfect Dark decomp, the Mouse Injector,
+and/or making a new 1964GEPD bundle.
+
+
+This script requires psake/powershell to run.
+Target os: Ubuntu LTS OCI-compatible container
+#>
 properties {
     $HOST1964 = $env:HOST1964
     $PDDEST = $env:PDDEST
@@ -16,6 +20,9 @@ properties {
 
 task default -depends root
 
+<#
+Setting default script varibles. This is done before any other target.
+#>
 task root {
     $script:HOST1964 = $HOST1964
     $script:PDDEST = $PDDEST
@@ -34,6 +41,11 @@ task root {
 
 }
 
+<#
+Perfect Dark build steps
+
+Environment variables are passed through make to force override.
+#>
 task clean-perfectdark -depends "root" -action {
     $env:task_clean_perfectdark = "fail"
     pushd $env:PD
@@ -76,6 +88,7 @@ task make-perfectdark -depends "root" -preAction {
       make
     popd
 
+    # TODO: fix this so it can be set in upper layer and forgotten about in the lower
     $make_envs = "$(gci env:/ | ?{$_.key -in @("COMPILER", "MATCHING", "SPEEDRUN_BUILD", "MI", "PROFILING", "FOV", "GEMUZZLE")} | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
     $make_cmd = "make -j $($make_envs)"
     Write-Information "PD make command: $($make_cmd)"
@@ -108,14 +121,13 @@ task make-perfectdark -depends "root" -preAction {
   popd
   $env:task_make_perfectdark = "pass"
 }
+
+<#
+Mouse Injector build steps
+#>
 task make-mouseinjector -preaction {
     $env:task_make_mouseinjector = "fail"
     Write-Information "make-mouseinjector: begin"
-
-    # pushd $env:MOUSEINJECTOR/games
-    #   rm perfectdark.generated.h -f
-    #   /app/python/mk-pdheader > perfectdark.generated.h
-    # popd
 } -action{
     pushd $env:MOUSEINJECTOR
       make -j || write-error "make-mouseinjector failed!"
@@ -132,6 +144,10 @@ task clean-mouseinjector -action {
     $env:task_clean_mouseinjector = "pass"
 } -depends "root"
 
+<#
+Make a new GEPD bundle.
+Depends on: make-mouseinjector
+#>
 task make-gepdbundle -depends "make-mouseinjector", "root" -action {
     $env:task_make_gepdbundle = "fail"
     if ( [string]::IsNullOrEmpty("$($env:GEPD_TARGET)".trim()) ) {
