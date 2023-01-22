@@ -15,7 +15,7 @@ ROMDirectory
 f"LastROMDirectory {winpath(Path(PD) / 'build'/ ROMID)}\n" +\
 f"SaveDirectory {winpath(gepd_save_dir)}\n" +\
 f"StateSaveDirectory {winpath(gepd_save_dir)}\n" +\
-f"PluginDirectory {winpath(gepd_save_dir)}" +\
+f"PluginDirectory {winpath(gepd_plugin_dir)}" +\
 '''
 AutoFullScreen 0
 UsingRspPlugin 0
@@ -98,6 +98,7 @@ def new_GepdBundleBom():
 
 def get_mouseinjector_suffix():
   if os.getenv('SPEEDRUN_BUILD'): return "_Speedrun"
+  if os.getenv('MI'): return "_pddecomp"
   return ""
 
 
@@ -123,7 +124,7 @@ def make_gepdbundle():
 
     #  copy our content - Mouse Injector
     mi_src = Path(MOUSEINJECTOR) / f"Mouse_Injector{get_mouseinjector_suffix()}.dll"
-    mi_dest = t / "1964/plugin/Mouse_Injector.dll"
+    mi_dest = t / f"1964/plugin/Mouse_Injector{get_mouseinjector_suffix()}.dll"
     check_call(["cp", "-rvf", mi_src, mi_dest], cwd=t)
     check_call(["ls", "-lah",  mi_dest], cwd=t)
 

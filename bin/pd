@@ -86,7 +86,8 @@ class PDEnv:
     "MI",
     "PROFILING",
     "FOV",
-    "GEMUZZLE"
+    "GEMUZZLE",
+    "PD_DECOMP"
   ]
   def __init__(self):
     # mounts and environemnt varialbes as they appear in OCI container
