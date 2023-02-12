@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 as build-armips
+FROM docker.io/ubuntu:20.04 as build-armips
 ENV LANG=en_US.UTF-8
 # Fix timezone issue
 ENV TZ=UTC
@@ -9,7 +9,7 @@ WORKDIR /tmp
 RUN git clone --recursive https://github.com/Kingcom/armips.git && cd armips && \
 mkdir build && cd build && cmake .. && cmake --build . --config Release && cp armips /usr/bin
 
-FROM ubuntu:22.10
+FROM docker.io/ubuntu:22.10
 ENV LANG=en_US.UTF-8
 # Fix timezone issue
 ENV TZ=UTC
