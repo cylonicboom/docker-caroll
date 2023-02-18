@@ -60,14 +60,9 @@ task make-perfectdark -depends "root" -preAction {
     Write-Information "make-perfectdark: preaction"
     pushd $env:PD
       $script:PDPreCheckSum = ""
-      try
-      {
+      try {
         $script:PDPreCheckSum = Get-FileHash "${script:OUT_ROM}.z64"
       } catch {}
-      $env:DC_BUILD_TAG = "$(date -u +'%Y-%m-%d.%H-%M-%S')-$($out_rom -replace 'build/','' -replace '/','.').$(basename $(cat .git/HEAD | awk '{print $2}'))"
-      # TODO: fix usage of PDARCHIVE
-      $script:PDARCHIVE = "$($env:GEPD_ARCHIVE)/$($env:DC_BUILD_TAG)/pd.z64"
-      mkdir -p $(dirname $script:PDARCHIVE )
 
       if (test-path build/$env:ROMID){
         pushd build/$env:ROMID
@@ -95,7 +90,18 @@ task make-perfectdark -depends "root" -preAction {
     # make perfect-dark
     Invoke-Expression $make_cmd || write-error "make-perfectdark failed"
   popd
-} -postAction {
+  $env:task_make_perfectdark = "pass"
+}
+
+task archive-perfectdark -depends "make-xdeltapatch" -preaction {
+    $env:task_archive_perfectdark = "fail"
+    pushd $env:PD
+      $env:DC_BUILD_TAG = "$(date -u +'%Y-%m-%d.%H-%M-%S')-$($out_rom -replace 'build/','' -replace '/','.').$(basename $(cat .git/HEAD | awk '{print $2}'))"
+      # TODO: fix usage of PDARCHIVE
+      $script:PDARCHIVE = "$($env:GEPD_ARCHIVE)/$($env:DC_BUILD_TAG)/pd.z64"
+      mkdir -p $(dirname $script:PDARCHIVE )
+    popd
+} -action {
   # copy
   pushd $env:PD
     $script:PDPostCheckSum = Get-FileHash "${script:OUT_ROM}.z64" -Erroraction Stop
@@ -110,6 +116,7 @@ task make-perfectdark -depends "root" -preAction {
       (pd-parsemap pd.map | jq | tee pd.json > /dev/null) && ls pd.json || write-error "Failed to recreate pd.json"
       cp -v pd.json $env:GEPD_ARCHIVE/$env:DC_BUILD_TAG || write-error "Failed to archive pd.json"
       mv -v pd.z64 $env:GEPD_ARCHIVE/$env:DC_BUILD_TAG/pd.z64 || write-error "Failed to move rom"
+      mv -v pd.xdelta $env:GEPD_ARCHIVE/$env:DC_BUILD_TAG/pd.xdelta || write-error "Failed to move xdelta"
       ln -s $env:GEPD_ARCHIVE_HOST/$env:DC_BUILD_TAG/pd.z64 pd.z64 || write-error "Failed to setup symlink"
 
       pushd $env:GEPD_ARCHIVE/$env:DC_BUILD_TAG
@@ -119,7 +126,16 @@ task make-perfectdark -depends "root" -preAction {
       # write-Information "archiving pd rom"
     popd
   popd
-  $env:task_make_perfectdark = "pass"
+  $env:task_archive_perfectdark = "pass"
+}
+
+task make-xdeltapatch -depends "make-perfectdark"  -action {
+  $env:task_make_xdeltapatch = "fail"
+    pushd $env:PD
+      xdelta delta -9 pd.$env:ROMID.z64 build/$env:ROMID/pd.z64 build/$env:ROMID/pd.xdelta
+      test-path build/$env:ROMID/pd.xdelta || Write-error "Failed to create xdelta"
+    popd
+  $env:task_make_xdeltapatch = "pass"
 }
 
 <#
@@ -163,4 +179,5 @@ task make-gepdbundle -depends "make-mouseinjector", "root" -action {
 task clean -depends "clean-mouseinjector", "clean-perfectdark"
 task buildall -depends "make-perfectdark", "make-mouseinjector", "make-gepdbundle"
 task mouseinjector -depends "clean-mouseinjector", "make-mouseinjector"
-task pd -depends "clean-perfectdark", "make-perfectdark"
+task pd -depends "clean-perfectdark", "make-perfectdark", "make-xdeltapatch"
+task pda -depends "pd", "archive-perfectdark"

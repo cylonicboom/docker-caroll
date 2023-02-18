@@ -41,6 +41,8 @@ gcc-mingw-w64-base gcc-mingw-w64-i686 mingw-w64-common \
 mingw-w64-i686-dev mingw-w64-tools curl python-is-python3 \
 zip unzip rsync jq git strace php
 
+RUN apt-get update &&  apt-get install -y xdelta
+
 # armips
 COPY --from=build-armips /usr/bin/armips /usr/bin/armips
 
