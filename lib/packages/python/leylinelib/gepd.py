@@ -98,7 +98,7 @@ def new_GepdBundleBom():
 
 def get_mouseinjector_suffix():
   if os.getenv('SPEEDRUN_BUILD'): return "_Speedrun"
-  if os.getenv('MI'): return "_pddecomp"
+  if os.getenv('PD_DECOMP'): return "_pddecomp"
   return ""
 
 

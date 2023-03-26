@@ -164,7 +164,7 @@ task clean-mouseinjector -action {
 Make a new GEPD bundle.
 Depends on: make-mouseinjector
 #>
-task make-gepdbundle -depends "make-mouseinjector", "root" -action {
+task make-gepdbundle -depends "mouseinjector", "root" -action {
     $env:task_make_gepdbundle = "fail"
     if ( [string]::IsNullOrEmpty("$($env:GEPD_TARGET)".trim()) ) {
         write-error "GEPD_TARGET must be set"
