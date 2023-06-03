@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+if [[ -z "$1" ]]; then
+    echo "Usage: $0 <new pd tree>"
+    exit 1
+fi
+
+if [[ -z "$PD" ]]; then
+    echo "PD environment variable not set"
+    exit 1
+fi
+
+if [[ -z `which git` ]]; then
+    echo "git not found"
+    exit 1
+fi
+
+mkdir -p $1
+git clone --mirror $PD $1/.git
+cp -r $PD/.git/config $1/.git/config
+
+cp $PD/*.z64 $1/
+pushd $1 > /dev/null
+    git fetch --all
+    git checkout master
+    git pull
+    git submodule update --init --recursive
+popd > /dev/null
