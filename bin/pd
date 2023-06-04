@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 import getopt
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     handlers=[logging.StreamHandler(sys.stderr)]
 )
 get_env = os.environ.get
@@ -396,7 +396,7 @@ def container_cmd(image_name = IMAGE_NAME,
     ])
     if stdout_null:
       container_command = f"{container_command} > /dev/null"
-    logging.info(container_command)
+    logging.debug(container_command)
     return runner(container_command, shell=True)
 
 
@@ -449,9 +449,9 @@ def pd_cli(
     except:
       pass
     finally:
-      logging.info("cleaning up container...")
+      logging.debug("cleaning up container...")
       subprocess.Popen([
-        'podman',
+        get_best_container_manager(),
         'container',
         'stop',
         container_id

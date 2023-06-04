@@ -177,7 +177,7 @@ task make-gepdbundle -depends "mouseinjector", "root" -action {
 }
 
 task clean -depends "clean-mouseinjector", "clean-perfectdark"
-task buildall -depends "make-perfectdark", "make-mouseinjector", "make-gepdbundle"
 task mouseinjector -depends "clean-mouseinjector", "make-mouseinjector"
 task pd -depends "clean-perfectdark", "make-perfectdark", "make-xdeltapatch"
 task pda -depends "pd", "archive-perfectdark"
+task bundle -depends "pda", "make-gepdbundle"
