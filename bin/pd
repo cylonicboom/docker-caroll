@@ -80,6 +80,7 @@ def parse_pd_cli_args():
 
 class PDEnv:
   allowedEnvironmentVars =  [
+    "DEBUG",
     "DEBUG_BUILD",
     "SPEEDRUN_BUILD",
     "DECOMP_BUILD",
@@ -87,7 +88,8 @@ class PDEnv:
     "PROFILING",
     "FOV",
     "GEMUZZLE",
-    "PD_DECOMP"
+    "PD_DECOMP",
+    "GEPD_SAVE_DIR"
   ]
   def __init__(self):
     # mounts and environemnt varialbes as they appear in OCI container
@@ -146,6 +148,7 @@ class PDEnv:
       'GEPD_ZIP': get_env('GEPD_ZIP'),
       'GEPD_ARCHIVE': get_env('GEPD_ARCHIVE'),
       'GEPD_TARGET': get_env('GEPD_TARGET'),
+      'GEPD_SAVE_DIR': get_env('GEPD_SAVE_DIR'),
 
       'LEYLINELIB': get_env('LEYLINELIB', str(Path(__file__).parents[1] / "lib/packages/python")),
 

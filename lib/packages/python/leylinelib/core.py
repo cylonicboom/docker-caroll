@@ -32,8 +32,8 @@ assert PD, "PD_HOST or PD must be set"
 ROMID=os.getenv("ROMID", "ntsc-final")
 
 # GEPD save / plugin locations
-gepd_save_dir = f"{GEPD}/save"
-gepd_plugin_dir = f"{GEPD}/plugin"
+gepd_save_dir = os.getenv("GEPD_SAVE_DIR", f"{GEPD}/save")
+gepd_plugin_dir = os.getenv("GEPD_PLUGIN_DIR", f"{GEPD}/plugin")
 
 PDSHARE = os.getenv("PDSHARE", str(Path(__file__).parents[4] / "share" )).strip()
 assert PDSHARE, "PDSHARE is unset"
