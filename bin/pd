@@ -79,18 +79,6 @@ def parse_pd_cli_args():
 
 
 class PDEnv:
-  allowedEnvironmentVars =  [
-    "DEBUG",
-    "DEBUG_BUILD",
-    "SPEEDRUN_BUILD",
-    "DECOMP_BUILD",
-    "MI",
-    "PROFILING",
-    "FOV",
-    "GEMUZZLE",
-    "PD_DECOMP",
-    "GEPD_SAVE_DIR"
-  ]
   def __init__(self):
     # mounts and environemnt varialbes as they appear in OCI container
     self._pd_env_vars = {
@@ -120,6 +108,20 @@ class PDEnv:
       # system env
       "SSH_AUTH_SOCK":  '/ssh-agent',
     }
+
+    self.allowedEnvironmentVars =  [
+      "DEBUG",
+      "DEBUG_BUILD",
+      "SPEEDRUN_BUILD",
+      "DECOMP_BUILD",
+      "MI",
+      "PROFILING",
+      "FOV",
+      "GEMUZZLE",
+      "PD_DECOMP",
+      "GEPD_SAVE_DIR"
+    ] + [a for a in os.environ.keys() if ("DEBUG" in a or "PD" in a or "PC" in a or "GE" in a or "DECOMP" in a or "ENABLE" in a or "USB" in a or "BUILD" in a ) and a not in self._pd_env_vars]
+
     # NOTE: check that environment variables above are set
     # warn if not set. A lot of this is optional
     for k,v in self._pd_env_vars.items():

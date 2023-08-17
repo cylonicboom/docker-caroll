@@ -84,7 +84,8 @@ task make-perfectdark -depends "root" -preAction {
     popd
 
     # TODO: fix this so it can be set in upper layer and forgotten about in the lower
-    $make_envs = "$(gci env:/ | ?{$_.key -in @("DEBUG", "COMPILER", "MATCHING", "SPEEDRUN_BUILD", "MI", "PROFILING", "FOV", "GEMUZZLE")} | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
+    $make_envs = "$(gci env:/ | ?{$_.key -notlike "*path*"} | ?{$_.key -notlike "CC"}  | %{"$($_.key)=$($_.value)"})" -replace [Environment]::NewLine," "
+    Write-Information "PD make envs: $make_envs"
     $make_cmd = "make -j $($make_envs)"
     Write-Information "PD make command: $($make_cmd)"
     # make perfect-dark

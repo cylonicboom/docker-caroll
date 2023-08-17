@@ -56,7 +56,7 @@ RUN apt-get update && apt-get install -y gcc-mips-linux-gnu
 RUN apt-get update && apt-get install -y wine mono-complete
 
 # dependencies for RMG / CMP
-RUN apt-get update && apt-get install -y software-properties-common
-RUN add-apt-repository ppa:okirby/qt6-backports --yes && \
-apt-get -qq update && apt-get upgrade -y && \
-apt-get -y install cmake ninja-build libhidapi-dev libsamplerate0-dev libspeex-dev libminizip-dev libsdl2-dev libfreetype6-dev libgl1-mesa-dev libglu1-mesa-dev pkg-config zlib1g-dev binutils-dev libspeexdsp-dev qt6-base-dev libqt6svg6-dev build-essential nasm git zip appstream
+# RUN apt-get update && apt-get install -y software-properties-common
+# RUN add-apt-repository ppa:okirby/qt6-backports --yes && \
+# apt-get -qq update && apt-get upgrade -y && \
+# apt-get -y install cmake ninja-build libhidapi-dev libsamplerate0-dev libspeex-dev libminizip-dev libsdl2-dev libfreetype6-dev libgl1-mesa-dev libglu1-mesa-dev pkg-config zlib1g-dev binutils-dev libspeexdsp-dev qt6-base-dev libqt6svg6-dev build-essential nasm git zip appstream
