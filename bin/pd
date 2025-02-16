@@ -138,24 +138,24 @@ class PDEnv:
 
       # Mouse Injector dir
       # ~/src/MouseInjectorPlugin
-      # "MOUSEINJECTOR" : get_env('MOUSEINJECTOR'),
+      "MOUSEINJECTOR" : get_env('MOUSEINJECTOR'),
 
       # psake content
       # this is almost always just whatever is packaged with this repo
       # but I was thinking of enabling an override
-      'PDPSAKE': get_env('PDPSAKE', f"{Path(__file__ ).parents[1].resolve()}/scripts/psake"),
+      'PDPSAKE': get_env('PDPSAKE', f"{Path(__file__ ).parents[0].resolve()}/scripts/psake"),
       'PDPYTHON': get_env('PDPYTHON', f"{Path(__file__ ).parents[0].resolve()}"),
       'PDSHARE': get_env('PDSHARE', f"{Path(__file__ ).parents[0].resolve()}/../share"),
 
-      # 'GEPD_ZIP': get_env('GEPD_ZIP'),
-      # 'GEPD_ARCHIVE': get_env('GEPD_ARCHIVE'),
-      # 'GEPD_TARGET': get_env('GEPD_TARGET'),
-      # 'GEPD_SAVE_DIR': get_env('GEPD_SAVE_DIR'),
+      'GEPD_ZIP': get_env('GEPD_ZIP'),
+      'GEPD_ARCHIVE': get_env('GEPD_ARCHIVE'),
+      'GEPD_TARGET': get_env('GEPD_TARGET'),
+      'GEPD_SAVE_DIR': get_env('GEPD_SAVE_DIR'),
 
       'LEYLINELIB': get_env('LEYLINELIB', str(Path(__file__).parents[1] / "lib/packages/python")),
 
       # ssh
-      # 'SSH_AUTH_SOCK' : get_env('SSH_AUTH_SOCK')
+      'SSH_AUTH_SOCK' : get_env('SSH_AUTH_SOCK')
     }
     # NOTE: check that environment variables above are set...or things will fail
     for k,v in self._pd_env_paths.items():
@@ -164,7 +164,7 @@ class PDEnv:
     self._pd_mounts = {
       # build mounts
       self._pd_env_paths['PD'] : '/app/perfect-dark',
-      # self._pd_env_paths['MOUSEINJECTOR']: '/app/MouseInjector',
+      self._pd_env_paths['MOUSEINJECTOR']: '/app/MouseInjector',
 
       # tooling mounts
       self._pd_env_paths['PDPSAKE']: "/app/psake",
@@ -174,12 +174,12 @@ class PDEnv:
       self._pd_env_paths['LEYLINELIB']: "/usr/lib/python3/dist-packages",
 
       # resource mounts
-      # self._pd_env_paths['GEPD_ZIP']: "/app/gepd.zip",
-      # self._pd_env_paths['GEPD_ARCHIVE']: "/app/gepd_archive",
-      # self._pd_env_paths['GEPD_TARGET']: "/app/gepd_target",
+      self._pd_env_paths['GEPD_ZIP']: "/app/gepd.zip",
+      self._pd_env_paths['GEPD_ARCHIVE']: "/app/gepd_archive",
+      self._pd_env_paths['GEPD_TARGET']: "/app/gepd_target",
 
       # system mount
-      # self._pd_env_paths['SSH_AUTH_SOCK']: "/ssh-agent"
+      self._pd_env_paths['SSH_AUTH_SOCK']: "/ssh-agent"
     }
 
     self._pd_env_vars.update({
@@ -187,8 +187,8 @@ class PDEnv:
       'PD_HOST' : self._pd_env_paths['PD'],
       'PDSHARE' : self.get_pd_mount('PDSHARE'),
       'PDPYTHON' : self.get_pd_mount('PDPYTHON'),
-      # 'GEPD_TARGET_HOST': self._pd_env_paths['GEPD_TARGET'],
-      # 'GEPD_ARCHIVE_HOST': self._pd_env_paths['GEPD_ARCHIVE'],
+      'GEPD_TARGET_HOST': self._pd_env_paths['GEPD_TARGET'],
+      'GEPD_ARCHIVE_HOST': self._pd_env_paths['GEPD_ARCHIVE'],
     })
 
     for a in self.allowedEnvironmentVars:
