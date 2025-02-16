@@ -164,6 +164,29 @@ task clean-mouseinjector -action {
     $env:task_clean_mouseinjector = "pass"
 } -depends "root"
 
+task make-dynamicmouseinjector -preaction {
+    $env:task_make_mouseinjector = "fail"
+    Write-Information "make-mouseinjector: begin"
+    pushd $env:MOUSEINJECTOR/games
+      rm perfectdark.generated.h -f
+      /app/python/mk-pdheader > perfectdark.generated.h
+    popd
+} -action{
+    pushd $env:MOUSEINJECTOR
+      make -j || write-error "make-mouseinjector failed!"
+    popd
+    $env:task_make_mouseinjector = "pass"
+} -postaction {
+} -depends  "root"
+task clean-mouseinjector -action {
+    $env:task_clean_mouseinjector = "fail"
+    pushd $env:MOUSEINJECTOR
+      make clean
+      mkdir -p obj
+    popd
+    $env:task_clean_mouseinjector = "pass"
+} -depends "root"
+
 <#
 Make a new GEPD bundle.
 Depends on: make-mouseinjector
